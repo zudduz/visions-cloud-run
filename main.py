@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/vision": {"origins": "http://www.zudduz.com/"}})
+CORS(app, resources={r"/vision": {"origins": "http://www.zudduz.com"}})
 
 @app.route("/")
 def hello_world():
