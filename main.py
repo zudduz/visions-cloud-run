@@ -1,7 +1,8 @@
 import os
-
+import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from google.cloud import aiplatform
 
 app = Flask(__name__)
 CORS(app, resources={r"/vision": {"origins": "http://www.zudduz.com"}})
@@ -22,16 +23,37 @@ def create_vision():
     if request.get_data():
         return jsonify({"error": "Request body is not permitted for this endpoint."}), 400
 
-    print("Vision creation triggered.")
+    method = request.args.get("method", "basic")
 
-    # TODO: Add logic to call the AI model
+    print(f"Vision creation triggered with method: {method}")
 
-    # Return a mock response
+    if method == "live":
+
+        try:
+            # TODO: Replace with your project ID, location, and endpoint ID
+            aiplatform.init(project="sandbox-456821", location="us-east4")
+            endpoint = aiplatform.Endpoint("YOUR_ENDPOINT_ID")
+
+            # The instances can be empty if your model does not require any input
+            instances = [{}]
+            prediction = endpoint.predict(instances=instances)
+
+            # Assuming the model returns a prediction with "text" and "image" fields
+            response_data = prediction.predictions[0]
+            
+            return jsonify(response_data), 200
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return jsonify({"error": "Failed to generate vision from the AI model."}), 500
+
+    # Default is to return a mock response if method is unspecified or unrecognized
     response_data = {
         "text": "You walk down the spaghetti stairs to realize you are face to face with a tiger",
         "image": "https://files.worldwildlife.org/wwfcmsprod/images/Tiger_resting_Bandhavgarh_National_Park_India/hero_small/6aofsvaglm_Medium_WW226365.jpg",
     }
     return jsonify(response_data), 202
+
 
 
 if __name__ == "__main__":
