@@ -31,7 +31,7 @@ def create_vision():
 
         try:
             # TODO: Replace with your project ID, location, and endpoint ID
-            aiplatform.init(project="sandbox-456821", location="us-east4")
+            aiplatform.init(project="sandbox-456821", location="us-central1")
             endpoint = aiplatform.Endpoint("YOUR_ENDPOINT_ID")
 
             # The instances can be empty if your model does not require any input
