@@ -1,5 +1,6 @@
 import os
 import json
+import inspect
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google.cloud import aiplatform
@@ -12,6 +13,19 @@ def hello_world():
     """Example endpoint."""
     name = os.environ.get("NAME", "World")
     return f"Hello {name}!"
+
+@app.route("/debug")
+def debug_aiplatform():
+    """Endpoint to debug the aiplatform module."""
+    try:
+        module_path = inspect.getfile(aiplatform)
+        module_attributes = dir(aiplatform)
+        return jsonify({
+            "module_path": module_path,
+            "module_attributes": module_attributes
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/vision", methods=["POST"])
 def create_vision():
