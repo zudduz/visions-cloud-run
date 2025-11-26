@@ -30,18 +30,13 @@ def create_vision():
     if method == "live":
 
         try:
-            # TODO: Replace with your project ID, location, and endpoint ID
             aiplatform.init(project="sandbox-456821", location="us-central1")
-            endpoint = aiplatform.Endpoint("YOUR_ENDPOINT_ID")
+            reasoning_engine = aiplatform.ReasoningEngine("1352192593978458112")
 
-            # The instances can be empty if your model does not require any input
-            instances = [{}]
-            prediction = endpoint.predict(instances=instances)
+            # The input from the curl command's data field
+            response = reasoning_engine.query(input={"input": "Please grant me a vision."})
 
-            # Assuming the model returns a prediction with "text" and "image" fields
-            response_data = prediction.predictions[0]
-            
-            return jsonify(response_data), 200
+            return jsonify(response), 200
 
         except Exception as e:
             print(f"An error occurred: {e}")
