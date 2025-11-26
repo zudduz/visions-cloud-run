@@ -44,7 +44,7 @@ def create_vision():
 
     # Default is to return a mock response if method is unspecified or unrecognized
     response_data = {
-        "text": "You walk down the spaghetti stairs to realize you are face to face with a tiger",
+        "text": "You walk down the linguini stairs to realize you are face to face with a tiger",
         "image": "https://files.worldwildlife.org/wwfcmsprod/images/Tiger_resting_Bandhavgarh_National_Park_India/hero_small/6aofsvaglm_Medium_WW226365.jpg",
     }
     return jsonify(response_data), 202
