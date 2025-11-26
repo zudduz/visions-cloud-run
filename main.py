@@ -48,8 +48,8 @@ def create_vision():
             return jsonify(response_data), 200
 
         except Exception as e:
-            print(f"An error occurred: {e}")
-            return jsonify({"error": "Failed to generate vision from the AI model."}), 500
+            # Return the actual exception for debugging
+            return jsonify({"error": f"An error occurred: {e}"}), 500
 
     # Default is to return a mock response
     response_data = {
