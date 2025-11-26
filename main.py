@@ -2,7 +2,8 @@ import os
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google.cloud import aiplatform
+from google.cloud.aiplatform.gapic import ReasoningEngineServiceClient
+from google.cloud.aiplatform_v1.types import ReasoningEngineSpec
 
 app = Flask(__name__)
 CORS(app, resources={r"/vision": {"origins": "http://www.zudduz.com"}})
@@ -28,24 +29,29 @@ def create_vision():
 
     if method == "live":
         try:
-            # Initialize the Vertex AI client
-            aiplatform.init(project="sandbox-456821", location="us-central1")
+            # The full resource name of the reasoning engine
+            engine_name = "projects/sandbox-456821/locations/us-central1/reasoningEngines/1352192593978458112"
 
-            # Get a reference to the an Endpoint
-            endpoint = aiplatform.Endpoint("1352192593978458112")
+            # Create a client for the Reasoning Engine Service
+            client = ReasoningEngineServiceClient(
+                client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+            )
 
-            # The `predict` method requires a list of instances.
-            instances = [{"input": "Please grant me a vision."}]
+            # Prepare the request
+            request_payload = {
+                "input": "I seek a vision for my future."
+            }
+            
+            # The query method requires the name and the input as a dict
+            response = client.query_reasoning_engine(
+                name=engine_name,
+                input=request_payload,
+            )
+            
+            # The response is a Struct, convert it to a dict
+            output_dict = dict(response.output)
 
-            # Send the prediction request
-            prediction = endpoint.predict(instances=instances)
-
-            # Extract the prediction from the response
-            # The response format may vary, adjust if necessary
-            response_data = prediction.predictions[0]
-
-
-            return jsonify(response_data), 200
+            return jsonify(output_dict), 200
 
         except Exception as e:
             # Return the actual exception for debugging
