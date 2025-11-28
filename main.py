@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google.cloud.aiplatform.gapic import ReasoningEngineServiceClient
 from google.cloud.aiplatform_v1.types import ReasoningEngineSpec
+from google.api_core import client_options
 
 app = Flask(__name__)
 CORS(app, resources={r"/vision": {"origins": "http://www.zudduz.com"}})
@@ -34,7 +35,7 @@ def create_vision():
 
             # Create a client for the Reasoning Engine Service
             client = ReasoningEngineServiceClient(
-                api_endpoint="us-central1-aiplatform.googleapis.com"
+                client_options=client_options.ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.com")
             )
 
             # Prepare the request
