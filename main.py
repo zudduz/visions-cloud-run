@@ -38,30 +38,26 @@ def create_vision():
                 client_options=client_options.ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.com")
             )
 
-            # Prepare the request
+            # Prepare the request payload
+            # The input needs to be a dict, which the client library should convert to the appropriate protobuf Struct
             request_payload = {
                 "input": "I seek a vision for my future."
             }
             
-            # The query method requires the name and the input as a dict
-            response = client.query_reasoning_engine(
-                name=engine_name,
-                input=request_payload,
-            )
+            # Construct the full request dictionary
+            # Using the 'request' keyword argument is safer to avoid argument name mismatches
+            request_msg = {
+                "name": engine_name,
+                "input": request_payload
+            }
             
-            # The response is a Struct, convert it to a dict
-            # Handling protobuf struct conversion might be needed, but let's try assuming response.output is accessible.
-            # Usually response.output is a google.protobuf.struct_pb2.Value or similar, but the gapic client might return a wrapper.
-            # If response is QueryReasoningEngineResponse, it has an 'output' field which is a google.protobuf.Value.
+            response = client.query_reasoning_engine(request=request_msg)
             
-            # To be safe, let's look at how to convert it.
-            # If it's a Value, we might need a helper, but let's stick to the previous code's assumption that it can be converted or accessed.
-            # The previous code had: output_dict = dict(response.output)
-            # If response.output is a protobuf Struct, passing it to dict() might not work directly if it's not a dictionary-like object in Python wrapper.
-            # However, for now, let's fix the Client first.
-            
-            # Note: response.output in newer google-cloud-aiplatform might be accessed differently.
-            # Let's keep the conversion logic for now, but if it fails, we will see another error.
+            # The response has an 'output' field which is a google.protobuf.Value (or Struct)
+            # We need to convert it to a python dict. 
+            # If the library returns a wrapped object that supports dict conversion, this works.
+            # Otherwise we might need to assume it's a dict-like object already or access fields.
+            # Let's try direct conversion or access.
             output_dict = dict(response.output)
 
             return jsonify(output_dict), 200
