@@ -25,7 +25,8 @@ def create_vision():
     if request.get_data():
         return jsonify({"error": "Request body is not permitted for this endpoint."}), 400
 
-    method = request.args.get("method", "basic")
+    # Default to "live" if method param is missing
+    method = request.args.get("method", "live")
 
     print(f"Vision creation triggered with method: {method}")
 
@@ -52,48 +53,23 @@ def create_vision():
             
             response = client.query_reasoning_engine(request=request_msg)
             
-            # response.output is typically a google.protobuf.Value
-            # However, depending on the client version/implementation, it might be behaving unexpectedly.
-            # The previous error "str object has no attribute WhichOneof" suggests that response.output might actually be a plain string?
-            # Or perhaps 'val' in the previous code was a string.
-            
-            # Let's inspect the type or try to just access it directly if it's already a dict or string.
+            # Simplified response handling
+            val = getattr(response, 'output', None)
             
             output_data = {}
-            if hasattr(response, 'output'):
-                val = response.output
-                # If it's already a dict
-                if isinstance(val, dict):
-                    output_data = val
-                # If it's a string (maybe JSON string?)
-                elif isinstance(val, str):
-                    try:
-                        output_data = json.loads(val)
-                    except:
-                         output_data = {"result": val}
-                # If it is a proto Value, it should have WhichOneof, unless it's not a generated proto object
-                elif hasattr(val, 'WhichOneof'):
-                    # It is a protobuf Value
-                    kind = val.WhichOneof("kind")
-                    if kind == "struct_value":
-                        # Convert MapComposite to dict
-                        output_data = dict(val.struct_value)
-                        # The items in the struct might still be Value objects? 
-                        # Usually proto-plus handles this recursiveness, but 'dict()' on a MapComposite is shallow if not careful.
-                        # However, for a simple JSON return, this usually works.
-                    elif kind == "list_value":
-                        output_data = list(val.list_value)
-                    elif kind == "string_value":
-                         output_data = {"result": val.string_value}
-                    else:
-                        output_data = {"result": str(val)}
-                # If it is a MapComposite (proto-plus)
-                elif hasattr(val, 'keys'):
-                     output_data = dict(val)
-                else:
-                    output_data = {"result": str(val), "type": str(type(val))}
+            if isinstance(val, dict):
+                output_data = val
+            elif isinstance(val, str):
+                try:
+                    output_data = json.loads(val)
+                except ValueError:
+                    # If it's just a string, map it to 'text' to match the contract slightly better
+                    # though ideally the AI should return JSON.
+                    output_data = {"text": val}
+            elif hasattr(val, "to_dict"):
+                 output_data = val.to_dict()
             else:
-                 output_data = {"error": "Response has no output field", "response": str(response)}
+                output_data = {"text": str(val) if val is not None else "No output"}
 
             return jsonify(output_data), 200
 
