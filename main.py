@@ -34,7 +34,7 @@ def create_vision():
 
             # Create a client for the Reasoning Engine Service
             client = ReasoningEngineServiceClient(
-                client_options={"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+                api_endpoint="us-central1-aiplatform.googleapis.com"
             )
 
             # Prepare the request
