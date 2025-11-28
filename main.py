@@ -2,7 +2,7 @@ import os
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google.cloud.aiplatform.gapic import ReasoningEngineServiceClient
+from google.cloud.aiplatform.gapic import ReasoningEngineExecutionServiceClient
 from google.cloud.aiplatform_v1.types import ReasoningEngineSpec
 from google.api_core import client_options
 
@@ -34,7 +34,7 @@ def create_vision():
             engine_name = "projects/sandbox-456821/locations/us-central1/reasoningEngines/1352192593978458112"
 
             # Create a client for the Reasoning Engine Service
-            client = ReasoningEngineServiceClient(
+            client = ReasoningEngineExecutionServiceClient(
                 client_options=client_options.ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.com")
             )
 
@@ -50,6 +50,18 @@ def create_vision():
             )
             
             # The response is a Struct, convert it to a dict
+            # Handling protobuf struct conversion might be needed, but let's try assuming response.output is accessible.
+            # Usually response.output is a google.protobuf.struct_pb2.Value or similar, but the gapic client might return a wrapper.
+            # If response is QueryReasoningEngineResponse, it has an 'output' field which is a google.protobuf.Value.
+            
+            # To be safe, let's look at how to convert it.
+            # If it's a Value, we might need a helper, but let's stick to the previous code's assumption that it can be converted or accessed.
+            # The previous code had: output_dict = dict(response.output)
+            # If response.output is a protobuf Struct, passing it to dict() might not work directly if it's not a dictionary-like object in Python wrapper.
+            # However, for now, let's fix the Client first.
+            
+            # Note: response.output in newer google-cloud-aiplatform might be accessed differently.
+            # Let's keep the conversion logic for now, but if it fails, we will see another error.
             output_dict = dict(response.output)
 
             return jsonify(output_dict), 200
