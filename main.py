@@ -5,6 +5,7 @@ from flask_cors import CORS
 from google.cloud.aiplatform.gapic import ReasoningEngineExecutionServiceClient
 from google.cloud.aiplatform_v1.types import ReasoningEngineSpec
 from google.api_core import client_options
+import proto
 
 app = Flask(__name__)
 CORS(app, resources={r"/vision": {"origins": "http://www.zudduz.com"}})
@@ -39,13 +40,11 @@ def create_vision():
             )
 
             # Prepare the request payload
-            # The input needs to be a dict, which the client library should convert to the appropriate protobuf Struct
             request_payload = {
                 "input": "I seek a vision for my future."
             }
             
             # Construct the full request dictionary
-            # Using the 'request' keyword argument is safer to avoid argument name mismatches
             request_msg = {
                 "name": engine_name,
                 "input": request_payload
@@ -53,17 +52,42 @@ def create_vision():
             
             response = client.query_reasoning_engine(request=request_msg)
             
-            # The response has an 'output' field which is a google.protobuf.Value (or Struct)
-            # We need to convert it to a python dict. 
-            # If the library returns a wrapped object that supports dict conversion, this works.
-            # Otherwise we might need to assume it's a dict-like object already or access fields.
-            # Let's try direct conversion or access.
-            output_dict = dict(response.output)
+            # Convert the proto-plus message to a dictionary
+            # This handles the unwrapping of Value types typically
+            if hasattr(response, 'to_dict'):
+                response_dict = response.to_dict()
+                output_data = response_dict.get('output')
+            else:
+                # Fallback if to_dict is missing (unlikely with modern gapic)
+                # We try to access the struct_value if it exists, assuming it is a struct
+                # But let's rely on the error message if this branch is hit.
+                # response.output is a Value message.
+                # To manually unwrap:
+                val = response.output
+                kind = val.WhichOneof("kind")
+                if kind == "struct_value":
+                    # struct_value is a Struct, which behaves like a dict in proto-plus
+                    # We can convert it to a dict
+                    output_data = dict(val.struct_value)
+                elif kind == "list_value":
+                    output_data = list(val.list_value)
+                elif kind == "string_value":
+                    output_data = val.string_value
+                elif kind == "number_value":
+                    output_data = val.number_value
+                elif kind == "bool_value":
+                    output_data = val.bool_value
+                elif kind == "null_value":
+                    output_data = None
+                else:
+                    output_data = str(val)
 
-            return jsonify(output_dict), 200
+            return jsonify(output_data), 200
 
         except Exception as e:
             # Return the actual exception for debugging
+            import traceback
+            traceback.print_exc()
             return jsonify({"error": f"An error occurred: {e}"}), 500
 
     # Default is to return a mock response
