@@ -52,35 +52,48 @@ def create_vision():
             
             response = client.query_reasoning_engine(request=request_msg)
             
-            # Convert the proto-plus message to a dictionary
-            # This handles the unwrapping of Value types typically
-            if hasattr(response, 'to_dict'):
-                response_dict = response.to_dict()
-                output_data = response_dict.get('output')
-            else:
-                # Fallback if to_dict is missing (unlikely with modern gapic)
-                # We try to access the struct_value if it exists, assuming it is a struct
-                # But let's rely on the error message if this branch is hit.
-                # response.output is a Value message.
-                # To manually unwrap:
+            # response.output is typically a google.protobuf.Value
+            # However, depending on the client version/implementation, it might be behaving unexpectedly.
+            # The previous error "str object has no attribute WhichOneof" suggests that response.output might actually be a plain string?
+            # Or perhaps 'val' in the previous code was a string.
+            
+            # Let's inspect the type or try to just access it directly if it's already a dict or string.
+            
+            output_data = {}
+            if hasattr(response, 'output'):
                 val = response.output
-                kind = val.WhichOneof("kind")
-                if kind == "struct_value":
-                    # struct_value is a Struct, which behaves like a dict in proto-plus
-                    # We can convert it to a dict
-                    output_data = dict(val.struct_value)
-                elif kind == "list_value":
-                    output_data = list(val.list_value)
-                elif kind == "string_value":
-                    output_data = val.string_value
-                elif kind == "number_value":
-                    output_data = val.number_value
-                elif kind == "bool_value":
-                    output_data = val.bool_value
-                elif kind == "null_value":
-                    output_data = None
+                # If it's already a dict
+                if isinstance(val, dict):
+                    output_data = val
+                # If it's a string (maybe JSON string?)
+                elif isinstance(val, str):
+                    try:
+                        output_data = json.loads(val)
+                    except:
+                         output_data = {"result": val}
+                # If it is a proto Value, it should have WhichOneof, unless it's not a generated proto object
+                elif hasattr(val, 'WhichOneof'):
+                    # It is a protobuf Value
+                    kind = val.WhichOneof("kind")
+                    if kind == "struct_value":
+                        # Convert MapComposite to dict
+                        output_data = dict(val.struct_value)
+                        # The items in the struct might still be Value objects? 
+                        # Usually proto-plus handles this recursiveness, but 'dict()' on a MapComposite is shallow if not careful.
+                        # However, for a simple JSON return, this usually works.
+                    elif kind == "list_value":
+                        output_data = list(val.list_value)
+                    elif kind == "string_value":
+                         output_data = {"result": val.string_value}
+                    else:
+                        output_data = {"result": str(val)}
+                # If it is a MapComposite (proto-plus)
+                elif hasattr(val, 'keys'):
+                     output_data = dict(val)
                 else:
-                    output_data = str(val)
+                    output_data = {"result": str(val), "type": str(type(val))}
+            else:
+                 output_data = {"error": "Response has no output field", "response": str(response)}
 
             return jsonify(output_data), 200
 
