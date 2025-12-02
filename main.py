@@ -8,7 +8,7 @@ from google.api_core import client_options
 import proto
 
 app = Flask(__name__)
-CORS(app, resources={r"/vision": {"origins": "http://www.zudduz.com"}})
+CORS(app, resources={r"/vision": {"origins": "https://www.zudduz.com"}})
 
 def parse_ai_response(response_string):
     if not isinstance(response_string, str):
