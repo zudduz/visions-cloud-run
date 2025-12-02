@@ -20,8 +20,8 @@ def parse_ai_response(response_string):
         try:
             parsed_json = json.loads(json_string)
             return {
-                "vision_text": parsed_json.get("vision_text"),
-                "image_url": parsed_json.get("image_url")
+                "text": parsed_json.get("vision_text"),
+                "image": parsed_json.get("image_url")
             }
         except json.JSONDecodeError:
             return {"text": response_string}
