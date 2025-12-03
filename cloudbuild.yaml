@@ -1,6 +1,11 @@
+substitutions:
+  _LOCATION: us-central1
+  _REPOSITORY: visions-cloud-run
+  _SERVICE_NAME: visions-cloud-run
+
 steps:
   # 1. Install dependencies and run tests
-  - name: 'python:3.9'
+  - name: 'python:3.10'
     id: Test
     entrypoint: bash
     args:
