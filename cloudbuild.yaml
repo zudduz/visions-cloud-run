@@ -1,22 +1,37 @@
 steps:
-  # 1. Build the container image
+  # 1. Install dependencies and run tests
+  - name: 'python:3.9'
+    id: Test
+    entrypoint: bash
+    args:
+    - -c
+    - |
+        pip install -r requirements.txt
+        python -m unittest test_main.py
+
+  # 2. Build the container image
   - name: 'gcr.io/cloud-builders/docker'
+    id: Build
     args:
       - 'build'
       - '-t'
       - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'
       - '.'
-    id: 'Build'
+    waitFor:
+      - Test
 
-  # 2. Push the container image to Artifact Registry
+  # 3. Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
+    id: Push
     args:
       - 'push'
       - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'
-    id: 'Push'
+    waitFor:
+      - Build
 
-  # 3. Deploy to Cloud Run using the service.yaml configuration
+  # 4. Deploy to Cloud Run using the service.yaml configuration
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Deploy
     entrypoint: 'bash'
     args:
     - '-c'
@@ -26,4 +41,8 @@ steps:
         
         # Deploy the service using the updated configuration file.
         gcloud run services replace service.yaml --region ${_LOCATION}
-    id: 'Deploy'
+    waitFor:
+      - Push
+
+options:
+  logging: CLOUD_LOGGING_ONLY
