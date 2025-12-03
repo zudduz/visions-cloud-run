@@ -10,6 +10,7 @@ app = Flask(__name__)
 # Allow requests only from the specified origin for the /vision endpoint
 CORS(app, resources={r"/vision": {"origins": "https://www.zudduz.com"}})
 
+
 def parse_ai_response(response_string: str) -> dict:
     """
     Parses the string response from the AI model, which may contain JSON.
@@ -17,7 +18,11 @@ def parse_ai_response(response_string: str) -> dict:
     parses it, and transforms it into the desired format.
     """
     if not isinstance(response_string, str):
-        return {"text": str(response_string) if response_string is not None else "No output"}
+        return {
+            "text":
+                str(response_string)
+                if response_string is not None else "No output"
+        }
 
     # Find the beginning of the last JSON object in the response string
     json_start_index = response_string.rfind('{')
@@ -37,6 +42,7 @@ def parse_ai_response(response_string: str) -> dict:
         # If no JSON object is found, return the original string
         return {"text": response_string}
 
+
 def get_ai_vision() -> dict:
     """
     Queries the Reasoning Engine to get a new vision.
@@ -47,18 +53,21 @@ def get_ai_vision() -> dict:
         raise ValueError("REASONING_ENGINE_NAME environment variable not set.")
 
     # Configure the API client
-    client_options_config = client_options.ClientOptions(api_endpoint="us-central1-aiplatform.googleapis.com")
-    client = ReasoningEngineExecutionServiceClient(client_options=client_options_config)
+    client_options_config = client_options.ClientOptions(
+        api_endpoint="us-central1-aiplatform.googleapis.com")
+    client = ReasoningEngineExecutionServiceClient(
+        client_options=client_options_config)
 
     # Prepare and send the request to the Reasoning Engine
     request_payload = {"input": "I seek a vision for my future."}
     request_msg = {"name": engine_name, "input": request_payload}
-    
+
     response = client.query_reasoning_engine(request=request_msg)
-    
+
     # Extract and parse the output from the response
     raw_output = getattr(response, 'output', None)
     return parse_ai_response(raw_output)
+
 
 @app.route("/vision", methods=["POST"])
 def create_vision():
@@ -67,7 +76,8 @@ def create_vision():
     Supports a 'method' query parameter to switch between 'live' and mock data.
     """
     if request.get_data():
-        return jsonify({"error": "Request body is not permitted for this endpoint."}), 400
+        return jsonify(
+            {"error": "Request body is not permitted for this endpoint."}), 400
 
     method = request.args.get("method", "live")
     print(f"Vision creation triggered with method: {method}")
@@ -83,10 +93,13 @@ def create_vision():
     else:
         # Provide mock data for testing or development
         mock_response_data = {
-            "text": "You walk down the linguini stairs to realize you are face to face with a tiger",
-            "image": "https://files.worldwildlife.org/wwfcmsprod/images/Tiger_resting_Bandhavgarh_National_Park_India/hero_small/6aofsvaglm_Medium_WW226365.jpg",
+            "text":
+                "You walk down the linguini stairs to realize you are face to face with a tiger",
+            "image":
+                "https://files.worldwildlife.org/wwfcmsprod/images/Tiger_resting_Bandhavgarh_National_Park_India/hero_small/6aofsvaglm_Medium_WW226365.jpg",
         }
         return jsonify(mock_response_data), 202
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
