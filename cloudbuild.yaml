@@ -15,30 +15,15 @@ steps:
       - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'
     id: 'Push'
 
-  # 3. Deploy container image to Cloud Run
+  # 3. Deploy to Cloud Run using the service.yaml configuration
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - '${_SERVICE_NAME}'
-      - '--image'
-      - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'
-      - '--region'
-      - '${_LOCATION}'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated' # Use --no-allow-unauthenticated for private services
+    - '-c'
+    - |
+        # Substitute the static image placeholder in service.yaml with the dynamic image built in the previous steps.
+        sed -i "s|image: gcr.io/sandbox-456821/visions-cloud-run|image: ${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}|" service.yaml
+        
+        # Deploy the service using the updated configuration file.
+        gcloud run services replace service.yaml --region ${_LOCATION}
     id: 'Deploy'
-
-# Store the built image in Artifact Registry
-images:
-  - '${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE_NAME}:${COMMIT_SHA}'
-
-substitutions:
-  _SERVICE_NAME: 'visions-cloud-run'
-  _REPOSITORY: 'docker-artifact-registry'
-  _LOCATION: 'us-central1'
-
-options:
-  logging: CLOUD_LOGGING_ONLY
